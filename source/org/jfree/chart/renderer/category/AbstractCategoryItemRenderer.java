@@ -163,6 +163,15 @@ public abstract class AbstractCategoryItemRenderer extends AbstractRenderer
     /** For serialization. */
     private static final long serialVersionUID = 1247553218442497391L;
 
+    /** The margin between items (bars) within a category. */
+    private double itemMargin;
+
+    /**
+     * The maximum bar width as percentage of the available space in the plot,
+     * where 0.05 is five percent.
+     */
+    private double maximumBarWidth;
+
     /** The plot that the renderer is assigned to. */
     private CategoryPlot plot;
 
@@ -236,6 +245,7 @@ public abstract class AbstractCategoryItemRenderer extends AbstractRenderer
         this.itemURLGeneratorList = new ObjectList();
         this.legendItemLabelGenerator
             = new StandardCategorySeriesLabelGenerator();
+        this.maximumBarWidth = 1.0;
     }
 
     /**
@@ -629,6 +639,33 @@ public abstract class AbstractCategoryItemRenderer extends AbstractRenderer
     }
 
     /**
+     * Returns the item margin as a percentage of the available space for all
+     * bars.
+     *
+     * @return The margin percentage (where 0.10 is ten percent).
+     *
+     * @see #setItemMargin(double)
+     */
+    public double getItemMargin() {
+        return this.itemMargin;
+    }
+
+    /**
+     * Sets the item margin and sends a {@link RendererChangeEvent} to all
+     * registered listeners.  The value is expressed as a percentage of the
+     * available width for plotting all the bars, with the resulting amount to
+     * be distributed between all the bars evenly.
+     *
+     * @param percent  the margin (where 0.10 is ten percent).
+     *
+     * @see #getItemMargin()
+     */
+    public void setItemMargin(double percent) {
+        this.itemMargin = percent;
+        fireChangeEvent();
+    }
+
+    /**
      * Initialises the renderer and returns a state object that will be used
      * for the remainder of the drawing process for a single chart.  The state
      * object allows for the fact that the renderer may be used simultaneously
@@ -661,6 +698,53 @@ public abstract class AbstractCategoryItemRenderer extends AbstractRenderer
         }
         return createState(info);
 
+    }
+
+    /**
+     * Calculates the bar width and stores it in the renderer state.
+     *
+     * @param plot  the plot.
+     * @param dataArea  the data area.
+     * @param rendererIndex  the renderer index.
+     * @param state  the renderer state.
+     */
+    protected void calculateBarWidth(CategoryPlot plot,
+                                     Rectangle2D dataArea,
+                                     int rendererIndex,
+                                     CategoryItemRendererState state) {
+
+        CategoryAxis domainAxis = getDomainAxis(plot, rendererIndex);
+        CategoryDataset dataset = plot.getDataset(rendererIndex);
+        if (dataset != null) {
+            int columns = dataset.getColumnCount();
+            int rows = dataset.getRowCount();
+            double space = 0.0;
+            PlotOrientation orientation = plot.getOrientation();
+            if (orientation == PlotOrientation.HORIZONTAL) {
+                space = dataArea.getHeight();
+            }
+            else if (orientation == PlotOrientation.VERTICAL) {
+                space = dataArea.getWidth();
+            }
+            double maxWidth = space * getMaximumBarWidth();
+            double categoryMargin = 0.0;
+            double currentItemMargin = 0.0;
+            if (columns > 1) {
+                categoryMargin = domainAxis.getCategoryMargin();
+            }
+            if (rows > 1) {
+                currentItemMargin = getItemMargin();
+            }
+            double used = space * (1 - domainAxis.getLowerMargin()
+                                     - domainAxis.getUpperMargin()
+                                     - categoryMargin - currentItemMargin);
+            if ((rows * columns) > 0) {
+                state.setBarWidth(Math.min(used / (rows * columns), maxWidth));
+            }
+            else {
+                state.setBarWidth(Math.min(used, maxWidth));
+            }
+        }
     }
 
     /**
@@ -1156,6 +1240,36 @@ public abstract class AbstractCategoryItemRenderer extends AbstractRenderer
         }
         return RectangleAnchor.coordinates(anchorRect, anchor);
 
+    }
+
+    /**
+     * Returns the maximum bar width as a percentage of the available drawing
+     * space.
+     *
+     * @return The maximum bar width.
+     *
+     * @see #setMaximumBarWidth(double)
+     *
+     * @since 1.0.10
+     */
+    public double getMaximumBarWidth() {
+        return this.maximumBarWidth;
+    }
+
+    /**
+     * Sets the maximum bar width, which is specified as a percentage of the
+     * available space for all bars, and sends a {@link RendererChangeEvent}
+     * to all registered listeners.
+     *
+     * @param percent  the maximum Bar Width (a percentage).
+     *
+     * @see #getMaximumBarWidth()
+     *
+     * @since 1.0.10
+     */
+    public void setMaximumBarWidth(double percent) {
+        this.maximumBarWidth = percent;
+        fireChangeEvent();
     }
 
     /**
