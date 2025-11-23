@@ -363,8 +363,7 @@ public class BoxAndWhiskerRenderer extends AbstractCategoryItemRenderer
                                      - domainAxis.getUpperMargin()
                                      - categoryMargin - currentItemMargin);
             if ((rows * columns) > 0) {
-                state.setBarWidth(Math.min(used / (dataset.getColumnCount()
-                        * dataset.getRowCount()), maxWidth));
+                state.setBarWidth(Math.min(used / (rows * columns), maxWidth));
             }
             else {
                 state.setBarWidth(Math.min(used, maxWidth));
