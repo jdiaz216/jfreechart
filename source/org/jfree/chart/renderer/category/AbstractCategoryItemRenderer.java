@@ -1678,4 +1678,26 @@ public abstract class AbstractCategoryItemRenderer extends AbstractRenderer
 
     }
 
+    protected int getVisibleRowCount(CategoryDataset dataset) {
+        int count = 0;
+        if (dataset != null) {
+            for (int row = 0; row < dataset.getRowCount(); row++) {
+                if (isSeriesVisible(row)) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    protected int getVisibleRowIndex(int actualRow) {
+        int visibleIndex = 0;
+        for (int row = 0; row < actualRow; row++) {
+            if (isSeriesVisible(row)) {
+                visibleIndex++;
+            }
+        }
+        return visibleIndex;
+    }
+
 }

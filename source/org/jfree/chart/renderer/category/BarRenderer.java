@@ -743,14 +743,11 @@ public class BarRenderer extends AbstractCategoryItemRenderer
                                      Rectangle2D dataArea,
                                      int rendererIndex,
                                      CategoryItemRendererState state) {
-
-        CategoryAxis domainAxis = getDomainAxis(plot, rendererIndex);
-        CategoryDataset dataset = plot.getDataset(rendererIndex);
-        if (dataset != null) {
-            int columns = dataset.getColumnCount();
-            int rows = dataset.getRowCount();
-            double space = 0.0;
+        CategoryAxis xAxis = plot.getDomainAxisForDataset(rendererIndex);
+        CategoryDataset data = plot.getDataset(rendererIndex);
+        if (data != null) {
             PlotOrientation orientation = plot.getOrientation();
+            double space = 0.0;
             if (orientation == PlotOrientation.HORIZONTAL) {
                 space = dataArea.getHeight();
             }
@@ -758,19 +755,22 @@ public class BarRenderer extends AbstractCategoryItemRenderer
                 space = dataArea.getWidth();
             }
             double maxWidth = space * getMaximumBarWidth();
+            int columns = data.getColumnCount();
             double categoryMargin = 0.0;
-            double currentItemMargin = 0.0;
             if (columns > 1) {
-                categoryMargin = domainAxis.getCategoryMargin();
+                categoryMargin = xAxis.getCategoryMargin();
             }
-            if (rows > 1) {
-                currentItemMargin = getItemMargin();
-            }
-            double used = space * (1 - domainAxis.getLowerMargin()
-                                     - domainAxis.getUpperMargin()
-                                     - categoryMargin - currentItemMargin);
-            if ((rows * columns) > 0) {
-                state.setBarWidth(Math.min(used / (rows * columns), maxWidth));
+
+            double used = space * (1 - xAxis.getLowerMargin() - xAxis.getUpperMargin()
+                    - categoryMargin);
+            if (columns > 0) {
+                // KEY CHANGE: Use visible row count instead of total row count
+                int visibleRows = getVisibleRowCount(data);
+                if (visibleRows > 0) {
+                    state.setBarWidth(Math.min(used / (visibleRows * columns), maxWidth));
+                } else {
+                    state.setBarWidth(Math.min(used / columns, maxWidth));
+                }
             }
             else {
                 state.setBarWidth(Math.min(used, maxWidth));
@@ -798,9 +798,7 @@ public class BarRenderer extends AbstractCategoryItemRenderer
                                     Rectangle2D dataArea,
                                     CategoryAxis domainAxis,
                                     CategoryItemRendererState state,
-                                    int row,
-                                    int column) {
-        // calculate bar width...
+                                    int row, int column) {
         double space = 0.0;
         if (orientation == PlotOrientation.HORIZONTAL) {
             space = dataArea.getHeight();
@@ -810,20 +808,24 @@ public class BarRenderer extends AbstractCategoryItemRenderer
         }
         double barW0 = domainAxis.getCategoryStart(column, getColumnCount(),
                 dataArea, plot.getDomainAxisEdge());
-        int seriesCount = getRowCount();
-        int categoryCount = getColumnCount();
-        if (seriesCount > 1) {
-            double seriesGap = space * getItemMargin()
-                               / (categoryCount * (seriesCount - 1));
+
+        // KEY CHANGE: Get visible series count and index
+        // Get dataset from plot to calculate visible counts
+        CategoryDataset dataset = plot.getDataset(plot.getIndexOf(this));
+        int visibleSeriesCount = getVisibleRowCount(dataset);
+        int visibleRow = getVisibleRowIndex(row);
+
+        if (visibleSeriesCount > 1) {
+            double seriesGap = space * getItemMargin() / (visibleSeriesCount - 1);
             double seriesW = calculateSeriesWidth(space, domainAxis,
-                    categoryCount, seriesCount);
-            barW0 = barW0 + row * (seriesW + seriesGap)
-                          + (seriesW / 2.0) - (state.getBarWidth() / 2.0);
+                    getColumnCount(), visibleSeriesCount);
+            barW0 = barW0 + visibleRow * (seriesW + seriesGap)
+                    + (seriesW / 2.0) - (state.getBarWidth() / 2.0);
         }
         else {
             barW0 = domainAxis.getCategoryMiddle(column, getColumnCount(),
-                    dataArea, plot.getDomainAxisEdge()) - state.getBarWidth()
-                    / 2.0;
+                    dataArea, plot.getDomainAxisEdge())
+                    - state.getBarWidth() / 2.0;
         }
         return barW0;
     }
@@ -959,6 +961,11 @@ public class BarRenderer extends AbstractCategoryItemRenderer
                          int column,
                          int pass) {
 
+        // Add this check at the beginning
+        if (!isSeriesVisible(row)) {
+            return;  // Skip drawing if series is not visible
+        }
+
         // nothing is drawn for null values...
         Number dataValue = dataset.getValue(row, column);
         if (dataValue == null) {
@@ -1026,7 +1033,7 @@ public class BarRenderer extends AbstractCategoryItemRenderer
         }
         if (getShadowsVisible()) {
             this.barPainter.paintBarShadow(g2, this, row, column, bar, barBase,
-                true);
+                    true);
         }
         this.barPainter.paintBar(g2, this, row, column, bar, barBase);
 
