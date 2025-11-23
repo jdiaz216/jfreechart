@@ -135,23 +135,14 @@ public class BoxAndWhiskerRenderer extends AbstractCategoryItemRenderer
     /** A flag that controls whether or not the box is filled. */
     private boolean fillBox;
 
-    /** The margin between items (boxes) within a category. */
-    private double itemMargin;
-
-    /**
-     * The maximum bar width as percentage of the available space in the plot,
-     * where 0.05 is five percent.
-     */
-    private double maximumBarWidth;
-
     /**
      * Default constructor.
      */
     public BoxAndWhiskerRenderer() {
         this.artifactPaint = Color.black;
         this.fillBox = true;
-        this.itemMargin = 0.20;
-        this.maximumBarWidth = 1.0;
+        this.setItemMargin(0.20);
+        this.setMaximumBarWidth(1.0);
         setBaseLegendShape(new Rectangle2D.Double(-4.0, -4.0, 8.0, 8.0));
     }
 
@@ -204,61 +195,6 @@ public class BoxAndWhiskerRenderer extends AbstractCategoryItemRenderer
      */
     public void setFillBox(boolean flag) {
         this.fillBox = flag;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the item margin.  This is a percentage of the available space
-     * that is allocated to the space between items in the chart.
-     *
-     * @return The margin.
-     *
-     * @see #setItemMargin(double)
-     */
-    public double getItemMargin() {
-        return this.itemMargin;
-    }
-
-    /**
-     * Sets the item margin and sends a {@link RendererChangeEvent} to all
-     * registered listeners.
-     *
-     * @param margin  the margin (a percentage).
-     *
-     * @see #getItemMargin()
-     */
-    public void setItemMargin(double margin) {
-        this.itemMargin = margin;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the maximum bar width as a percentage of the available drawing
-     * space.
-     *
-     * @return The maximum bar width.
-     *
-     * @see #setMaximumBarWidth(double)
-     *
-     * @since 1.0.10
-     */
-    public double getMaximumBarWidth() {
-        return this.maximumBarWidth;
-    }
-
-    /**
-     * Sets the maximum bar width, which is specified as a percentage of the
-     * available space for all bars, and sends a {@link RendererChangeEvent}
-     * to all registered listeners.
-     *
-     * @param percent  the maximum Bar Width (a percentage).
-     *
-     * @see #getMaximumBarWidth()
-     *
-     * @since 1.0.10
-     */
-    public void setMaximumBarWidth(double percent) {
-        this.maximumBarWidth = percent;
         fireChangeEvent();
     }
 
@@ -335,41 +271,7 @@ public class BoxAndWhiskerRenderer extends AbstractCategoryItemRenderer
 
         CategoryItemRendererState state = super.initialise(g2, dataArea, plot,
                 rendererIndex, info);
-
-        // calculate the box width
-        CategoryAxis domainAxis = getDomainAxis(plot, rendererIndex);
-        CategoryDataset dataset = plot.getDataset(rendererIndex);
-        if (dataset != null) {
-            int columns = dataset.getColumnCount();
-            int rows = dataset.getRowCount();
-            double space = 0.0;
-            PlotOrientation orientation = plot.getOrientation();
-            if (orientation == PlotOrientation.HORIZONTAL) {
-                space = dataArea.getHeight();
-            }
-            else if (orientation == PlotOrientation.VERTICAL) {
-                space = dataArea.getWidth();
-            }
-            double maxWidth = space * getMaximumBarWidth();
-            double categoryMargin = 0.0;
-            double currentItemMargin = 0.0;
-            if (columns > 1) {
-                categoryMargin = domainAxis.getCategoryMargin();
-            }
-            if (rows > 1) {
-                currentItemMargin = getItemMargin();
-            }
-            double used = space * (1 - domainAxis.getLowerMargin()
-                                     - domainAxis.getUpperMargin()
-                                     - categoryMargin - currentItemMargin);
-            if ((rows * columns) > 0) {
-                state.setBarWidth(Math.min(used / (rows * columns), maxWidth));
-            }
-            else {
-                state.setBarWidth(Math.min(used, maxWidth));
-            }
-        }
-
+        calculateBarWidth(plot, dataArea, rendererIndex, state);
         return state;
 
     }
@@ -875,10 +777,10 @@ public class BoxAndWhiskerRenderer extends AbstractCategoryItemRenderer
         if (this.fillBox != that.fillBox) {
             return false;
         }
-        if (this.itemMargin != that.itemMargin) {
+        if (this.getItemMargin() != that.getItemMargin()) {
             return false;
         }
-        if (this.maximumBarWidth != that.maximumBarWidth) {
+        if (this.getMaximumBarWidth() != that.getMaximumBarWidth()) {
             return false;
         }
         return true;

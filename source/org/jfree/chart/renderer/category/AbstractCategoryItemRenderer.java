@@ -163,7 +163,7 @@ public abstract class AbstractCategoryItemRenderer extends AbstractRenderer
     /** For serialization. */
     private static final long serialVersionUID = 1247553218442497391L;
 
-    /** The margin between items (bars) within a category. */
+    /** The margin between items within a category. */
     private double itemMargin;
 
     /**
