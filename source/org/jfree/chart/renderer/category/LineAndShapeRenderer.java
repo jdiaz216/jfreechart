@@ -904,15 +904,15 @@ public class LineAndShapeRenderer extends AbstractCategoryItemRenderer
             return;
         }
 
-        // do nothing if both the line and shape are not visible
-        if (!getItemLineVisible(row, column)
-                && !getItemShapeVisible(row, column)) {
-            return;
-        }
-
         // nothing is drawn for null...
         Number v = dataset.getValue(row, column);
         if (v == null) {
+            return;
+        }
+
+        // do nothing if both the line and shape are not visible
+        if (!getItemLineVisible(row, column)
+                && !getItemShapeVisible(row, column)) {
             return;
         }
 
@@ -1000,6 +1000,12 @@ public class LineAndShapeRenderer extends AbstractCategoryItemRenderer
                 }
             }
 
+            // submit the current data point as a crosshair candidate
+            int datasetIndex = plot.indexOf(dataset);
+            updateCrosshairValues(state.getCrosshairState(),
+                    dataset.getRowKey(row), dataset.getColumnKey(column),
+                    v.doubleValue(), datasetIndex, x1, y1, orientation);
+
             // draw the item label if there is one...
             if (isItemLabelVisible(row, column)) {
                 if (orientation == PlotOrientation.HORIZONTAL) {
@@ -1011,12 +1017,6 @@ public class LineAndShapeRenderer extends AbstractCategoryItemRenderer
                             y1, (v.doubleValue() < 0.0));
                 }
             }
-
-            // submit the current data point as a crosshair candidate
-            int datasetIndex = plot.indexOf(dataset);
-            updateCrosshairValues(state.getCrosshairState(),
-                    dataset.getRowKey(row), dataset.getColumnKey(column),
-                    v.doubleValue(), datasetIndex, x1, y1, orientation);
 
             // add an item entity, if this information is being collected
             EntityCollection entities = state.getEntityCollection();
