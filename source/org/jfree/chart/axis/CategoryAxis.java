@@ -706,18 +706,8 @@ public class CategoryAxis extends Axis implements Cloneable, Serializable {
         int categoryCount = dataset.getColumnCount();
         int seriesIndex = dataset.getRowIndex(seriesKey);
         int seriesCount = dataset.getRowCount();
-        double start = getCategoryStart(categoryIndex, categoryCount, area,
-                edge);
-        double end = getCategoryEnd(categoryIndex, categoryCount, area, edge);
-        double width = end - start;
-        if (seriesCount == 1) {
-            return start + width / 2.0;
-        }
-        else {
-            double gap = (width * itemMargin) / (seriesCount - 1);
-            double ww = (width * (1 - itemMargin)) / seriesCount;
-            return start + (seriesIndex * (ww + gap)) + ww / 2.0;
-        }
+
+        return getMiddleCoordinate(categoryIndex, categoryCount, seriesIndex, seriesCount, itemMargin, area, edge);
     }
 
     /**
@@ -1190,6 +1180,24 @@ public class CategoryAxis extends Axis implements Cloneable, Serializable {
                    + insets.getTop() + insets.getBottom();
         return h;
 
+    }
+
+    public double getMiddleCoordinate(int categoryIndex, int categoryCount,
+                                          int seriesIndex, int seriesCount, double itemMargin,
+                                          Rectangle2D area, RectangleEdge edge) {
+
+        double start = getCategoryStart(categoryIndex, categoryCount, area,
+                edge);
+        double end = getCategoryEnd(categoryIndex, categoryCount, area, edge);
+        double width = end - start;
+        if (seriesCount == 1) {
+            return start + width / 2.0;
+        }
+        else {
+            double gap = (width * itemMargin) / (seriesCount - 1);
+            double ww = (width * (1 - itemMargin)) / seriesCount;
+            return start + (seriesIndex * (ww + gap)) + ww / 2.0;
+        }
     }
 
     /**
