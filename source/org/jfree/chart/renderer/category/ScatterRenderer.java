@@ -111,11 +111,6 @@ public class ScatterRenderer extends AbstractCategoryItemRenderer
      */
     private boolean useOutlinePaint;
 
-    /**
-     * A flag that controls whether or not the x-position for each item is
-     * offset within the category according to the series.
-     */
-    private boolean useSeriesOffset;
 
     /**
      * The item margin used for series offsetting - this allows the positioning
@@ -132,34 +127,8 @@ public class ScatterRenderer extends AbstractCategoryItemRenderer
         this.useFillPaint = false;
         this.drawOutlines = false;
         this.useOutlinePaint = false;
-        this.useSeriesOffset = true;
+        this.setUseSeriesOffset(true);
         this.itemMargin = 0.20;
-    }
-
-    /**
-     * Returns the flag that controls whether or not the x-position for each
-     * data item is offset within the category according to the series.
-     *
-     * @return A boolean.
-     *
-     * @see #setUseSeriesOffset(boolean)
-     */
-    public boolean getUseSeriesOffset() {
-        return this.useSeriesOffset;
-    }
-
-    /**
-     * Sets the flag that controls whether or not the x-position for each
-     * data item is offset within its category according to the series, and
-     * sends a {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param offset  the offset.
-     *
-     * @see #getUseSeriesOffset()
-     */
-    public void setUseSeriesOffset(boolean offset) {
-        this.useSeriesOffset = offset;
-        fireChangeEvent();
     }
 
     /**
@@ -376,6 +345,10 @@ public class ScatterRenderer extends AbstractCategoryItemRenderer
             return;
         }
 
+        if (!state.visibleRowExists(row)) {
+            return;
+        }
+
         PlotOrientation orientation = plot.getOrientation();
 
         MultiValueCategoryDataset d = (MultiValueCategoryDataset) dataset;
@@ -386,20 +359,9 @@ public class ScatterRenderer extends AbstractCategoryItemRenderer
         int valueCount = values.size();
         for (int i = 0; i < valueCount; i++) {
             // current data point...
-            double x1;
-            if (this.useSeriesOffset) {
-                x1 = domainAxis.getCategorySeriesMiddle(dataset.getColumnKey(
-                        column), dataset.getRowKey(row), dataset,
-                        this.itemMargin, dataArea, plot.getDomainAxisEdge());
-            }
-            else {
-                x1 = domainAxis.getCategoryMiddle(column, getColumnCount(),
-                        dataArea, plot.getDomainAxisEdge());
-            }
+            double x1 = getX1(dataArea, plot, domainAxis, dataset, row, column, state);
             Number n = (Number) values.get(i);
-            double value = n.doubleValue();
-            double y1 = rangeAxis.valueToJava2D(value, dataArea,
-                    plot.getRangeAxisEdge());
+            double y1 = getY1(dataArea, plot, rangeAxis, n);
 
             Shape shape = getItemShape(row, column);
             if (orientation == PlotOrientation.HORIZONTAL) {
@@ -519,7 +481,7 @@ public class ScatterRenderer extends AbstractCategoryItemRenderer
         if (this.useOutlinePaint != that.useOutlinePaint) {
             return false;
         }
-        if (this.useSeriesOffset != that.useSeriesOffset) {
+        if (this.getUseSeriesOffset() != that.getUseSeriesOffset()) {
             return false;
         }
         if (this.itemMargin != that.itemMargin) {

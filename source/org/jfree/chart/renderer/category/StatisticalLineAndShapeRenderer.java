@@ -172,11 +172,15 @@ public class StatisticalLineAndShapeRenderer extends LineAndShapeRenderer
             return;
         }
 
+        if (!state.visibleRowExists(row)) {
+            return;
+        }
+
         Number v = dataset.getValue(row, column);
         PlotOrientation orientation = plot.getOrientation();
 
         // current data point...
-        double x1 = getX1(dataArea, plot, domainAxis, dataset, row, column);
+        double x1 = getX1(dataArea, plot, domainAxis, dataset, row, column, state);
         double y1 = getY1(dataArea, plot, rangeAxis, v);
 
         Shape shape = getItemShape(row, column);
@@ -205,7 +209,7 @@ public class StatisticalLineAndShapeRenderer extends LineAndShapeRenderer
         }
 
         if (getItemLineVisible(row, column)) {
-            drawLine(g2, dataArea, plot, domainAxis, rangeAxis, dataset, row, column, orientation, y1, x1);
+            drawLine(g2, dataArea, plot, domainAxis, rangeAxis, dataset, row, column, orientation, y1, x1, state);
         }
 
         RectangleEdge yAxisLocation = plot.getRangeAxisEdge();

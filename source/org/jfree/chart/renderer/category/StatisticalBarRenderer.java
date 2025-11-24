@@ -204,6 +204,10 @@ public class StatisticalBarRenderer extends BarRenderer
                          int column,
                          int pass) {
 
+        if(!state.visibleRowExists(row)) {
+            return;
+        }
+
         // defensive check
         if (!(data instanceof StatisticalCategoryDataset)) {
             throw new IllegalArgumentException(
@@ -251,15 +255,16 @@ public class StatisticalBarRenderer extends BarRenderer
         double rectY = domainAxis.getCategoryStart(column, getColumnCount(),
                 dataArea, xAxisLocation);
 
-        int seriesCount = getRowCount();
+        int seriesCount = getRowCount(state, getRowCount());
         int categoryCount = getColumnCount();
+        int visibleRow = state.getVisibleSeriesIndex(row);
         if (seriesCount > 1) {
             double seriesGap = dataArea.getHeight() * getItemMargin()
                                / (categoryCount * (seriesCount - 1));
-            rectY = rectY + row * (state.getBarWidth() + seriesGap);
+            rectY = rectY + visibleRow * (state.getBarWidth() + seriesGap);
         }
         else {
-            rectY = rectY + row * state.getBarWidth();
+            rectY = rectY + visibleRow * state.getBarWidth();
         }
 
         // BAR X
@@ -409,15 +414,17 @@ public class StatisticalBarRenderer extends BarRenderer
         double rectX = domainAxis.getCategoryStart(column, getColumnCount(),
                 dataArea, xAxisLocation);
 
-        int seriesCount = getRowCount();
+        int seriesCount = getRowCount(state, getRowCount());
         int categoryCount = getColumnCount();
+        int visibleRow = state.getVisibleSeriesIndex(row);
+
         if (seriesCount > 1) {
             double seriesGap = dataArea.getWidth() * getItemMargin()
                                / (categoryCount * (seriesCount - 1));
-            rectX = rectX + row * (state.getBarWidth() + seriesGap);
+            rectX = rectX + visibleRow * (state.getBarWidth() + seriesGap);
         }
         else {
-            rectX = rectX + row * state.getBarWidth();
+            rectX = rectX + visibleRow * state.getBarWidth();
         }
 
         // BAR Y

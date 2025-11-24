@@ -67,6 +67,8 @@ public class CategoryItemRendererState extends RendererState {
      */
     private CategoryCrosshairState crosshairState;
 
+    private int[] visibleSeries;
+
     /**
      * Creates a new object for recording temporary state information for a
      * renderer.
@@ -151,4 +153,36 @@ public class CategoryItemRendererState extends RendererState {
         this.crosshairState = state;
     }
 
+
+    public int getVisibleSeriesIndex(int rowIndex) {
+
+        if (this.visibleSeries == null) {
+
+            return rowIndex;
+        } else {
+
+            int index = -1;
+
+            for (int vRow = 0; vRow < this.visibleSeries.length; vRow++) {
+                if (this.visibleSeries[vRow] == rowIndex) {
+                    index = vRow;
+                    break;
+                }
+            }
+
+            return index;
+        }
+    }
+
+    public int getVisibleSeriesCount() {
+        return this.visibleSeries != null ? this.visibleSeries.length : -1;
+    }
+
+    public void setVisibleSeriesArray(int[] visibleSeries) {
+        this.visibleSeries = visibleSeries;
+    }
+
+    public boolean visibleRowExists(int row) {
+        return getVisibleSeriesIndex(row) >= 0;
+    }
 }

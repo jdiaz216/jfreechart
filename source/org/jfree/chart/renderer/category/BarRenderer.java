@@ -704,7 +704,7 @@ public class BarRenderer extends AbstractCategoryItemRenderer
         }
         double barW0 = domainAxis.getCategoryStart(column, getColumnCount(),
                 dataArea, plot.getDomainAxisEdge());
-        int seriesCount = getRowCount();
+        int seriesCount = getRowCount(state, getRowCount());
         int categoryCount = getColumnCount();
         if (seriesCount > 1) {
             double seriesGap = space * getItemMargin()
@@ -853,6 +853,10 @@ public class BarRenderer extends AbstractCategoryItemRenderer
                          int column,
                          int pass) {
 
+        if (!state.visibleRowExists(row)) {
+            return;
+        }
+
         // nothing is drawn for null values...
         Number dataValue = dataset.getValue(row, column);
         if (dataValue == null) {
@@ -860,9 +864,10 @@ public class BarRenderer extends AbstractCategoryItemRenderer
         }
 
         final double value = dataValue.doubleValue();
+        int visibleRow = state.getVisibleSeriesIndex(row);
         PlotOrientation orientation = plot.getOrientation();
         double barW0 = calculateBarW0(plot, orientation, dataArea, domainAxis,
-                state, row, column);
+                state, visibleRow, column);
         double[] barL0L1 = calculateBarL0L1(value);
         if (barL0L1 == null) {
             return;  // the bar is not visible

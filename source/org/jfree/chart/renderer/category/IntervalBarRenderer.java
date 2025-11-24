@@ -157,7 +157,12 @@ public class IntervalBarRenderer extends BarRenderer {
                                  int row,
                                  int column) {
 
-        int seriesCount = getRowCount();
+         if (!state.visibleRowExists(row)) {
+             return;
+         }
+
+         int seriesCount = getRowCount(state, getRowCount());
+
         int categoryCount = getColumnCount();
 
         PlotOrientation orientation = plot.getOrientation();
