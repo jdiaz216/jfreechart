@@ -182,7 +182,7 @@ public class StatisticalLineAndShapeRenderer extends LineAndShapeRenderer
         StatisticalCategoryDataset statData
                 = (StatisticalCategoryDataset) dataset;
 
-        Number meanValue = statData.getMeanValue(row, column);
+        Number meanValue = dataset.getValue(row, column);
 
         PlotOrientation orientation = plot.getOrientation();
 
@@ -198,7 +198,7 @@ public class StatisticalLineAndShapeRenderer extends LineAndShapeRenderer
                     dataArea, plot.getDomainAxisEdge());
         }
 
-        double y1 = rangeAxis.valueToJava2D(meanValue.doubleValue(), dataArea,
+        double y1 = rangeAxis.valueToJava2D(v.doubleValue(), dataArea,
                 plot.getRangeAxisEdge());
 
         Shape shape = getItemShape(row, column);
@@ -228,10 +228,8 @@ public class StatisticalLineAndShapeRenderer extends LineAndShapeRenderer
 
         if (getItemLineVisible(row, column)) {
             if (column != 0) {
-
-                Number previousValue = statData.getValue(row, column - 1);
+                Number previousValue = dataset.getValue(row, column - 1);
                 if (previousValue != null) {
-
                     // previous data point...
                     double previous = previousValue.doubleValue();
                     double x0;

@@ -929,8 +929,8 @@ public class LineAndShapeRenderer extends AbstractCategoryItemRenderer
             x1 = domainAxis.getCategoryMiddle(column, getColumnCount(),
                     dataArea, plot.getDomainAxisEdge());
         }
-        double value = v.doubleValue();
-        double y1 = rangeAxis.valueToJava2D(value, dataArea,
+
+        double y1 = rangeAxis.valueToJava2D(v.doubleValue(), dataArea,
                 plot.getRangeAxisEdge());
 
         if (pass == 0 && getItemLineVisible(row, column)) {
@@ -1004,11 +1004,11 @@ public class LineAndShapeRenderer extends AbstractCategoryItemRenderer
             if (isItemLabelVisible(row, column)) {
                 if (orientation == PlotOrientation.HORIZONTAL) {
                     drawItemLabel(g2, orientation, dataset, row, column, y1,
-                            x1, (value < 0.0));
+                            x1, (v.doubleValue() < 0.0));
                 }
                 else if (orientation == PlotOrientation.VERTICAL) {
                     drawItemLabel(g2, orientation, dataset, row, column, x1,
-                            y1, (value < 0.0));
+                            y1, (v.doubleValue() < 0.0));
                 }
             }
 
@@ -1016,11 +1016,11 @@ public class LineAndShapeRenderer extends AbstractCategoryItemRenderer
             int datasetIndex = plot.indexOf(dataset);
             updateCrosshairValues(state.getCrosshairState(),
                     dataset.getRowKey(row), dataset.getColumnKey(column),
-                    value, datasetIndex, x1, y1, orientation);
+                    v.doubleValue(), datasetIndex, x1, y1, orientation);
 
             // add an item entity, if this information is being collected
             EntityCollection entities = state.getEntityCollection();
-            if (entities != null) {
+            if (entities != null && shape != null) {
                 addItemEntity(entities, dataset, row, column, shape);
             }
         }
