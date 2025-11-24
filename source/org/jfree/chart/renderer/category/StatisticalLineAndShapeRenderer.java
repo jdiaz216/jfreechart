@@ -160,14 +160,7 @@ public class StatisticalLineAndShapeRenderer extends LineAndShapeRenderer
             ValueAxis rangeAxis, CategoryDataset dataset, int row, int column,
             int pass) {
 
-        // do nothing if item is not visible
-        if (!getItemVisible(row, column)) {
-            return;
-        }
-
-        // nothing is drawn for null...
-        Number v = dataset.getValue(row, column);
-        if (v == null) {
+        if (notValidRowAndColumn(dataset, row, column)) {
             return;
         }
 
@@ -179,27 +172,12 @@ public class StatisticalLineAndShapeRenderer extends LineAndShapeRenderer
             return;
         }
 
-        StatisticalCategoryDataset statData
-                = (StatisticalCategoryDataset) dataset;
-
-        Number meanValue = dataset.getValue(row, column);
-
+        Number v = dataset.getValue(row, column);
         PlotOrientation orientation = plot.getOrientation();
 
         // current data point...
-        double x1;
-        if (getUseSeriesOffset()) {
-            x1 = domainAxis.getCategorySeriesMiddle(dataset.getColumnKey(
-                    column), dataset.getRowKey(row), dataset, getItemMargin(),
-                    dataArea, plot.getDomainAxisEdge());
-        }
-        else {
-            x1 = domainAxis.getCategoryMiddle(column, getColumnCount(),
-                    dataArea, plot.getDomainAxisEdge());
-        }
-
-        double y1 = rangeAxis.valueToJava2D(v.doubleValue(), dataArea,
-                plot.getRangeAxisEdge());
+        double x1 = getX1(dataArea, plot, domainAxis, dataset, row, column);
+        double y1 = getY1(dataArea, plot, rangeAxis, v);
 
         Shape shape = getItemShape(row, column);
         if (orientation == PlotOrientation.HORIZONTAL) {
@@ -227,67 +205,35 @@ public class StatisticalLineAndShapeRenderer extends LineAndShapeRenderer
         }
 
         if (getItemLineVisible(row, column)) {
-            if (column != 0) {
-                Number previousValue = dataset.getValue(row, column - 1);
-                if (previousValue != null) {
-                    // previous data point...
-                    double previous = previousValue.doubleValue();
-                    double x0;
-                    if (getUseSeriesOffset()) {
-                        x0 = domainAxis.getCategorySeriesMiddle(
-                                dataset.getColumnKey(column - 1),
-                                dataset.getRowKey(row), dataset,
-                                getItemMargin(), dataArea,
-                                plot.getDomainAxisEdge());
-                    }
-                    else {
-                        x0 = domainAxis.getCategoryMiddle(column - 1,
-                                getColumnCount(), dataArea,
-                                plot.getDomainAxisEdge());
-                    }
-                    double y0 = rangeAxis.valueToJava2D(previous, dataArea,
-                            plot.getRangeAxisEdge());
-
-                    Line2D line = null;
-                    if (orientation == PlotOrientation.HORIZONTAL) {
-                        line = new Line2D.Double(y0, x0, y1, x1);
-                    }
-                    else if (orientation == PlotOrientation.VERTICAL) {
-                        line = new Line2D.Double(x0, y0, x1, y1);
-                    }
-                    g2.setPaint(getItemPaint(row, column));
-                    g2.setStroke(getItemStroke(row, column));
-                    g2.draw(line);
-                }
-            }
+            drawLine(g2, dataArea, plot, domainAxis, rangeAxis, dataset, row, column, orientation, y1, x1);
         }
 
         RectangleEdge yAxisLocation = plot.getRangeAxisEdge();
         g2.setPaint(getItemPaint(row, column));
 
         //standard deviation lines
-        double valueDelta = statData.getStdDevValue(row, column).doubleValue();
+        double valueDelta = ((StatisticalCategoryDataset) dataset).getStdDevValue(row, column).doubleValue();
 
         double highVal, lowVal;
-        if ((meanValue.doubleValue() + valueDelta)
+        if ((v.doubleValue() + valueDelta)
                 > rangeAxis.getRange().getUpperBound()) {
             highVal = rangeAxis.valueToJava2D(
                     rangeAxis.getRange().getUpperBound(), dataArea,
                     yAxisLocation);
         }
         else {
-            highVal = rangeAxis.valueToJava2D(meanValue.doubleValue()
+            highVal = rangeAxis.valueToJava2D(v.doubleValue()
                     + valueDelta, dataArea, yAxisLocation);
         }
 
-        if ((meanValue.doubleValue() + valueDelta)
+        if ((v.doubleValue() + valueDelta)
                 < rangeAxis.getRange().getLowerBound()) {
             lowVal = rangeAxis.valueToJava2D(
                     rangeAxis.getRange().getLowerBound(), dataArea,
                     yAxisLocation);
         }
         else {
-            lowVal = rangeAxis.valueToJava2D(meanValue.doubleValue()
+            lowVal = rangeAxis.valueToJava2D(v.doubleValue()
                     - valueDelta, dataArea, yAxisLocation);
         }
 
@@ -315,24 +261,8 @@ public class StatisticalLineAndShapeRenderer extends LineAndShapeRenderer
             g2.draw(line);
         }
 
-        // draw the item label if there is one...
-        if (isItemLabelVisible(row, column)) {
-            if (orientation == PlotOrientation.HORIZONTAL) {
-                drawItemLabel(g2, orientation, dataset, row, column,
-                        y1, x1, (meanValue.doubleValue() < 0.0));
-            }
-            else if (orientation == PlotOrientation.VERTICAL) {
-                drawItemLabel(g2, orientation, dataset, row, column,
-                        x1, y1, (meanValue.doubleValue() < 0.0));
-            }
-        }
-
-        // add an item entity, if this information is being collected
-        EntityCollection entities = state.getEntityCollection();
-        if (entities != null && shape != null) {
-            addItemEntity(entities, dataset, row, column, shape);
-        }
-
+        drawLabel(g2, dataset, row, column, orientation, y1, x1, v);
+        addItemEntity(state, dataset, row, column, shape);
     }
 
     /**
