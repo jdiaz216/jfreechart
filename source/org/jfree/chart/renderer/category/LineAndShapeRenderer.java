@@ -196,14 +196,6 @@ public class LineAndShapeRenderer extends AbstractCategoryItemRenderer
     private boolean useOutlinePaint;
 
     /**
-     * A flag that controls whether or not the x-position for each item is
-     * offset within the category according to the series.
-     *
-     * @since 1.0.7
-     */
-    private boolean useSeriesOffset;
-
-    /**
      * The item margin used for series offsetting - this allows the positioning
      * to match the bar positions of the {@link BarRenderer} class.
      *
@@ -238,7 +230,6 @@ public class LineAndShapeRenderer extends AbstractCategoryItemRenderer
         this.useFillPaint = false;
         this.drawOutlines = true;
         this.useOutlinePaint = false;
-        this.useSeriesOffset = false;  // preserves old behaviour
         this.itemMargin = 0.0;
     }
 
@@ -745,36 +736,6 @@ public class LineAndShapeRenderer extends AbstractCategoryItemRenderer
     }
 
     /**
-     * Returns the flag that controls whether or not the x-position for each
-     * data item is offset within the category according to the series.
-     *
-     * @return A boolean.
-     *
-     * @see #setUseSeriesOffset(boolean)
-     *
-     * @since 1.0.7
-     */
-    public boolean getUseSeriesOffset() {
-        return this.useSeriesOffset;
-    }
-
-    /**
-     * Sets the flag that controls whether or not the x-position for each
-     * data item is offset within its category according to the series, and
-     * sends a {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param offset  the offset.
-     *
-     * @see #getUseSeriesOffset()
-     *
-     * @since 1.0.7
-     */
-    public void setUseSeriesOffset(boolean offset) {
-        this.useSeriesOffset = offset;
-        fireChangeEvent();
-    }
-
-    /**
      * Returns the item margin, which is the gap between items within a
      * category (expressed as a percentage of the overall category width).
      * This can be used to match the offset alignment with the bars drawn by
@@ -908,15 +869,19 @@ public class LineAndShapeRenderer extends AbstractCategoryItemRenderer
             return;
         }
 
+        if (!state.visibleRowExists(row)) {
+            return;
+        }
+
         Number v = dataset.getValue(row, column);
         PlotOrientation orientation = plot.getOrientation();
 
         // current data point...
-        double x1 = getX1(dataArea, plot, domainAxis, dataset, row, column);
+        double x1 = getX1(dataArea, plot, domainAxis, dataset, row, column, state);
         double y1 = getY1(dataArea, plot, rangeAxis, v);
 
         if (pass == 0 && getItemLineVisible(row, column)) {
-            drawLine(g2, dataArea, plot, domainAxis, rangeAxis, dataset, row, column, orientation, y1, x1);
+            drawLine(g2, dataArea, plot, domainAxis, rangeAxis, dataset, row, column, orientation, y1, x1, state);
         }
 
         if (pass == 1) {
@@ -965,26 +930,6 @@ public class LineAndShapeRenderer extends AbstractCategoryItemRenderer
         return !getItemVisible(row, column) || dataset.getValue(row, column) == null;
     }
 
-    protected double getY1(Rectangle2D dataArea, CategoryPlot plot, ValueAxis rangeAxis, Number v) {
-        return rangeAxis.valueToJava2D(v.doubleValue(), dataArea,
-                plot.getRangeAxisEdge());
-    }
-
-    protected double getX1(Rectangle2D dataArea, CategoryPlot plot, CategoryAxis domainAxis, CategoryDataset dataset,
-                         int row, int column) {
-        double x1;
-        if (getUseSeriesOffset()) {
-            x1 = domainAxis.getCategorySeriesMiddle(dataset.getColumnKey(
-                            column), dataset.getRowKey(row), dataset, getItemMargin(),
-                    dataArea, plot.getDomainAxisEdge());
-        }
-        else {
-            x1 = domainAxis.getCategoryMiddle(column, getColumnCount(),
-                    dataArea, plot.getDomainAxisEdge());
-        }
-        return x1;
-    }
-
     protected void addItemEntity(CategoryItemRendererState state, CategoryDataset dataset, int row, int column, Shape shape) {
         // add an item entity, if this information is being collected
         EntityCollection entities = state.getEntityCollection();
@@ -1010,27 +955,13 @@ public class LineAndShapeRenderer extends AbstractCategoryItemRenderer
 
     protected void drawLine(Graphics2D g2, Rectangle2D dataArea, CategoryPlot plot, CategoryAxis domainAxis,
                            ValueAxis rangeAxis, CategoryDataset dataset, int row, int column,
-                           PlotOrientation orientation, double y1, double x1) {
+                           PlotOrientation orientation, double y1, double x1, CategoryItemRendererState state) {
         if (column != 0) {
             Number previousValue = dataset.getValue(row, column - 1);
             if (previousValue != null) {
                 // previous data point...
-                double previous = previousValue.doubleValue();
-                double x0;
-                if (getUseSeriesOffset()) {
-                    x0 = domainAxis.getCategorySeriesMiddle(
-                            dataset.getColumnKey(column - 1),
-                            dataset.getRowKey(row), dataset,
-                            getItemMargin(), dataArea,
-                            plot.getDomainAxisEdge());
-                }
-                else {
-                    x0 = domainAxis.getCategoryMiddle(column - 1,
-                            getColumnCount(), dataArea,
-                            plot.getDomainAxisEdge());
-                }
-                double y0 = rangeAxis.valueToJava2D(previous, dataArea,
-                        plot.getRangeAxisEdge());
+                double x0 = getX1(dataArea, plot, domainAxis, dataset, row, column - 1, state);
+                double y0 = getY1(dataArea, plot, rangeAxis, previousValue);
 
                 Line2D line = null;
                 if (orientation == PlotOrientation.HORIZONTAL) {
@@ -1096,7 +1027,7 @@ public class LineAndShapeRenderer extends AbstractCategoryItemRenderer
         if (this.useOutlinePaint != that.useOutlinePaint) {
             return false;
         }
-        if (this.useSeriesOffset != that.useSeriesOffset) {
+        if (this.getUseSeriesOffset() != that.getUseSeriesOffset()) {
             return false;
         }
         if (this.itemMargin != that.itemMargin) {

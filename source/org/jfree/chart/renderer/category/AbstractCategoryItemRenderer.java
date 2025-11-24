@@ -162,6 +162,13 @@ public abstract class AbstractCategoryItemRenderer extends AbstractRenderer
 
     /** For serialization. */
     private static final long serialVersionUID = 1247553218442497391L;
+    /**
+     * A flag that controls whether or not the x-position for each item is
+     * offset within the category according to the series.
+     *
+     * @since 1.0.7
+     */
+    private boolean useSeriesOffset;
 
     /** The margin between items within a category. */
     private double itemMargin;
@@ -246,6 +253,7 @@ public abstract class AbstractCategoryItemRenderer extends AbstractRenderer
         this.legendItemLabelGenerator
             = new StandardCategorySeriesLabelGenerator();
         this.maximumBarWidth = 1.0;
+        this.useSeriesOffset = false;  // preserves old behaviour
     }
 
     /**
@@ -639,6 +647,36 @@ public abstract class AbstractCategoryItemRenderer extends AbstractRenderer
     }
 
     /**
+     * Returns the flag that controls whether or not the x-position for each
+     * data item is offset within the category according to the series.
+     *
+     * @return A boolean.
+     *
+     * @see #setUseSeriesOffset(boolean)
+     *
+     * @since 1.0.7
+     */
+    public boolean getUseSeriesOffset() {
+        return this.useSeriesOffset;
+    }
+
+    /**
+     * Sets the flag that controls whether or not the x-position for each
+     * data item is offset within its category according to the series, and
+     * sends a {@link RendererChangeEvent} to all registered listeners.
+     *
+     * @param offset  the offset.
+     *
+     * @see #getUseSeriesOffset()
+     *
+     * @since 1.0.7
+     */
+    public void setUseSeriesOffset(boolean offset) {
+        this.useSeriesOffset = offset;
+        fireChangeEvent();
+    }
+
+    /**
      * Returns the item margin as a percentage of the available space for all
      * bars.
      *
@@ -696,8 +734,27 @@ public abstract class AbstractCategoryItemRenderer extends AbstractRenderer
             this.rowCount = 0;
             this.columnCount = 0;
         }
-        return createState(info);
 
+        CategoryItemRendererState state = createState(info);
+        int[] visibleSeries = getVisibleSeries();
+        state.setVisibleSeriesArray(visibleSeries);
+        return state;
+
+    }
+
+    private int[] getVisibleSeries() {
+        int[] visibleSeriesTemp = new int[this.rowCount];
+        int visibleSeriesCount = 0;
+
+        for (int row = 0; row < this.rowCount; row++) {
+            if (isSeriesVisible(row)) {
+                visibleSeriesTemp[visibleSeriesCount] = row;
+                visibleSeriesCount++;
+            }
+        }
+        int[] visibleSeries = new int[visibleSeriesCount];
+        System.arraycopy(visibleSeriesTemp, 0, visibleSeries, 0, visibleSeriesCount);
+        return visibleSeries;
     }
 
     /**
@@ -717,7 +774,7 @@ public abstract class AbstractCategoryItemRenderer extends AbstractRenderer
         CategoryDataset dataset = plot.getDataset(rendererIndex);
         if (dataset != null) {
             int columns = dataset.getColumnCount();
-            int rows = dataset.getRowCount();
+            int rows = getRowCount(state, dataset.getRowCount());
             double space = 0.0;
             PlotOrientation orientation = plot.getOrientation();
             if (orientation == PlotOrientation.HORIZONTAL) {
@@ -745,6 +802,10 @@ public abstract class AbstractCategoryItemRenderer extends AbstractRenderer
                 state.setBarWidth(Math.min(used, maxWidth));
             }
         }
+    }
+
+    protected int getRowCount(CategoryItemRendererState state, int defaultRowCount) {
+        return state.getVisibleSeriesCount() >= 0 ? state.getVisibleSeriesCount() : defaultRowCount;
     }
 
     /**
@@ -1327,6 +1388,27 @@ public abstract class AbstractCategoryItemRenderer extends AbstractRenderer
         item.setDataset(dataset);
         item.setDatasetIndex(datasetIndex);
         return item;
+    }
+
+    protected double getY1(Rectangle2D dataArea, CategoryPlot plot, ValueAxis rangeAxis, Number v) {
+        return rangeAxis.valueToJava2D(v.doubleValue(), dataArea,
+                plot.getRangeAxisEdge());
+    }
+
+    protected double getX1(Rectangle2D dataArea, CategoryPlot plot, CategoryAxis domainAxis, CategoryDataset dataset,
+                           int row, int column, CategoryItemRendererState state) {
+        double x1;
+        if (getUseSeriesOffset()) {
+            int visibleRow = state.getVisibleSeriesIndex(row);
+            int visibleRowCount = state.getVisibleSeriesCount();
+            x1 = domainAxis.getMiddleCoordinate(column, dataset.getColumnCount(), visibleRow, visibleRowCount,
+                    getItemMargin(), dataArea, plot.getDomainAxisEdge());
+        }
+        else {
+            x1 = domainAxis.getCategoryMiddle(column, getColumnCount(),
+                    dataArea, plot.getDomainAxisEdge());
+        }
+        return x1;
     }
 
     /**
