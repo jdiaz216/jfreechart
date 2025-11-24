@@ -920,9 +920,9 @@ public class LineAndShapeRenderer extends AbstractCategoryItemRenderer
 
         // current data point...
         double x1;
-        if (this.useSeriesOffset) {
+        if (getUseSeriesOffset()) {
             x1 = domainAxis.getCategorySeriesMiddle(dataset.getColumnKey(
-                    column), dataset.getRowKey(row), dataset, this.itemMargin,
+                    column), dataset.getRowKey(row), dataset, getItemMargin(),
                     dataArea, plot.getDomainAxisEdge());
         }
         else {
@@ -940,11 +940,11 @@ public class LineAndShapeRenderer extends AbstractCategoryItemRenderer
                     // previous data point...
                     double previous = previousValue.doubleValue();
                     double x0;
-                    if (this.useSeriesOffset) {
+                    if (getUseSeriesOffset()) {
                         x0 = domainAxis.getCategorySeriesMiddle(
                                 dataset.getColumnKey(column - 1),
                                 dataset.getRowKey(row), dataset,
-                                this.itemMargin, dataArea,
+                                getItemMargin(), dataArea,
                                 plot.getDomainAxisEdge());
                     }
                     else {
